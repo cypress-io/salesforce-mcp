@@ -20,7 +20,7 @@ Authentication reuses your existing SF CLI sessions — no credentials stored in
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/kenny-buckles/salesforce-mcp.git
+git clone https://github.com/cypress-io/salesforce-mcp.git
 cd salesforce-mcp
 npm install
 npm run build
