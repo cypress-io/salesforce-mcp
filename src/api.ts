@@ -99,6 +99,40 @@ export async function describeSObject(objectName: string, alias?: string) {
     `/services/data/${API_VERSION}/sobjects/${objectName}/describe`);
 }
 
+// Returns a compact field list for one or more objects — optimised for NL→SOQL use.
+// Full describe is ~300KB per object; this strips it down to what's needed to write queries.
+export async function schemaForQuery(objectNames: string[], alias?: string) {
+  const { accessToken, instanceUrl } = getOrgAuth(alias);
+
+  const results: Record<string, any> = {};
+
+  await Promise.all(objectNames.map(async (name) => {
+    const describe = await sfFetch(accessToken, instanceUrl, 'GET',
+      `/services/data/${API_VERSION}/sobjects/${name}/describe`);
+
+    results[name] = {
+      label: describe.label,
+      fields: describe.fields.map((f: any) => ({
+        name: f.name,
+        label: f.label,
+        type: f.type,
+        ...(f.type === 'picklist' && { picklistValues: f.picklistValues.map((p: any) => p.value) }),
+        ...(f.referenceTo?.length && { referenceTo: f.referenceTo }),
+        ...(f.relationshipName && { relationshipName: f.relationshipName }),
+      })),
+      childRelationships: describe.childRelationships
+        .filter((r: any) => r.relationshipName)
+        .map((r: any) => ({
+          childObject: r.childSObject,
+          field: r.field,
+          relationshipName: r.relationshipName,
+        })),
+    };
+  }));
+
+  return results;
+}
+
 // ─── Flow / FlexiPage list via SOQL ───────────────────────────────────────────
 
 export async function listFlows(alias?: string) {

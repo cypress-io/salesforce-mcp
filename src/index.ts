@@ -4,7 +4,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { listOrgs } from './auth.js';
 import {
   soqlQuery, getRecord, createRecord, updateRecord, deleteRecord,
-  executeApex, listSObjects, describeSObject,
+  executeApex, listSObjects, describeSObject, schemaForQuery,
   listFlows, listFlexiPages, getMetadata, deployMetadata,
 } from './api.js';
 
@@ -124,6 +124,26 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           org_alias: { type: 'string' },
         },
         required: ['object_name'],
+      },
+    },
+    {
+      name: 'schema_for_query',
+      description: [
+        'Fetch a compact field reference for one or more SObjects — API names, labels, types,',
+        'picklist values, and relationship names. Use this before writing SOQL from a natural',
+        'language request to ensure field API names are correct, especially for custom fields.',
+      ].join(' '),
+      inputSchema: {
+        type: 'object',
+        properties: {
+          object_names: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'One or more SObject API names to describe (e.g. ["Account", "Opportunity"])',
+          },
+          org_alias: { type: 'string' },
+        },
+        required: ['object_names'],
       },
     },
     {
@@ -253,6 +273,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'list_sobjects':
         result = await listSObjects(args.org_alias as string | undefined);
+        break;
+
+      case 'schema_for_query':
+        result = await schemaForQuery(
+          args.object_names as string[],
+          args.org_alias as string | undefined,
+        );
         break;
 
       case 'describe_sobject':
