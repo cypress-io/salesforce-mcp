@@ -5,7 +5,7 @@ import {
 } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { getOrgAuth } from './auth.js';
+import { getOrgAuth, redactSecretsFromCliText } from './auth.js';
 
 const API_VERSION = 'v62.0';
 
@@ -227,7 +227,7 @@ function runSfCli(command: string, cwd: string): any {
   try {
     return JSON.parse(stdout);
   } catch {
-    return { status: 1, message: stdout };
+    return { status: 1, message: redactSecretsFromCliText(stdout) };
   }
 }
 
@@ -244,7 +244,10 @@ export function getMetadata(metadataType: string, fullName: string, alias?: stri
     );
 
     if (result.status !== 0) {
-      throw new Error(`Retrieve failed: ${result.message ?? JSON.stringify(result)}`);
+      const detail = redactSecretsFromCliText(
+        String(result.message ?? JSON.stringify(result)),
+      );
+      throw new Error(`Retrieve failed: ${detail}`);
     }
 
     const xmlFiles = walkXmlFiles(join(tmpDir, 'force-app'));
@@ -280,7 +283,10 @@ export function deployMetadata(
     );
 
     if (result.status !== 0) {
-      throw new Error(`Deploy failed: ${result.message ?? JSON.stringify(result)}`);
+      const detail = redactSecretsFromCliText(
+        String(result.message ?? JSON.stringify(result)),
+      );
+      throw new Error(`Deploy failed: ${detail}`);
     }
 
     return JSON.stringify(result.result?.deployedSource ?? result.result ?? { success: true }, null, 2);
